@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PController     : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class PController     : MonoBehaviour
     public float jumpForce = 16.0f;
     public float groundCheckRadius;
     public float wallCheckDistance;
+    public float wallSlidingSpeed;
 
     public int amountOfJumps = 2 ;
     private int amountOfJumpsLeft;
@@ -21,11 +23,13 @@ public class PController     : MonoBehaviour
     private bool isWalking; 
     private bool isGrounded;
     private bool canJump;
-    private bool isTouchingWall; 
+    private bool isTouchingWall;
+    private bool isWallSliding;
 
     public Transform groundCheck;
     public Transform wallCheck;
     public LayerMask whatIsGrounded;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -36,10 +40,22 @@ public class PController     : MonoBehaviour
     
     void Update()
     {
+        if (DialogueManager.isActive == true)
+        {
+            return;
+        }
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+
+            SceneManager.LoadScene("MainMenu");
+
+        }
         CheckInput();
         checkMovementDirection();
         UpdateAnimation();
         checkIfCanJump();
+        checkIfWallSliding();
+      
     }
     void FixedUpdate()
     {
@@ -57,9 +73,28 @@ public class PController     : MonoBehaviour
                 Jump();
         }
     }
+    private void checkIfWallSliding()
+    {
+        if(isTouchingWall && !isGrounded && rb.velocity.y < 0)
+        {
+            isWallSliding = true;
+        }
+        else
+        {
+            isWallSliding = false;
+        }
+    }
     private void ApplyMovement()
     {
         rb.velocity = new Vector2(movementSpeed * movementInputDirection,rb.velocity.y);
+
+        if (isWallSliding)
+        {
+            if(rb.velocity.y < -wallSlidingSpeed)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, -wallSlidingSpeed);
+            }
+        }
     }
     private void Jump()
     {
@@ -119,6 +154,9 @@ public class PController     : MonoBehaviour
     private void UpdateAnimation()
     {
         anim.SetBool("isWalking", isWalking);
+        anim.SetBool("isGrounded", isGrounded);
+        anim.SetFloat("yVelocity", rb.velocity.y);
+        anim.SetBool("isWallSliding", isWallSliding);
     }
     #endregion
     
@@ -133,8 +171,17 @@ public class PController     : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        
+            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
 
         Gizmos.DrawLine(wallCheck.position, new Vector3(wallCheck.position.x + wallCheckDistance, wallCheck.position.y, wallCheck.position.z));
     }
+    public void onEscape()
+    {
+
+
+    }
+
+    
+ 
 }
